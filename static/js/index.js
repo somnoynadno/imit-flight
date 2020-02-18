@@ -117,33 +117,67 @@ class Game extends React.Component {
     }
 
     launch() {
+        let paramsAreValid = true;
+
         this.y0 =  Number($('#height').val());
         this.ang = Number($('#angle').val());
         this.v0 =  Number($('#speed').val());
-        this.S =   Number($('#size').val());
-        this.m =   Number($('#weight').val());
+
+        if (isNaN(this.y0) || isNaN(this.ang) || isNaN(this.v0))
+            paramsAreValid = false;
 
         this.useAtmosphere = $("#use-atmosphere").prop("checked");
 
-        this.interval = setInterval(() => this.tick(), 1000 * this.dt);
+        this.vx = this.v0*Math.cos(toRadians(this.ang));
+        this.vy = this.v0*Math.sin(toRadians(this.ang));
+
+        if (this.useAtmosphere) {
+            this.x = this.x0;
+            this.y = this.y0;
+
+            this.S = Number($('#size').val());
+            this.m = Number($('#weight').val());
+
+            if (isNaN(this.S) || isNaN(this.m))
+                paramsAreValid = false;
+
+            this.k = 0.5 * C * rho * this.S / this.m;
+        }
+
+        if (paramsAreValid) {
+            document.getElementById('graph-container').innerHTML = '';
+            this.interval = setInterval(() => this.tick(), 1000*this.dt);
+        }
     }
 
     tick() {
-        let x = this.x0 + this.v0*Math.cos(toRadians(this.ang))*this.state.time;
-        let y = this.y0 + this.v0*Math.sin(toRadians(this.ang))*this.state.time - g*this.state.time*this.state.time/2;
+        if (this.useAtmosphere){
+            let v = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
 
-        this.dots.push([x, y]);
-        drawChart(this.dots);
+            this.vx = this.vx - this.k*this.vx*v*this.dt;
+            this.vy = this.vy - (g + this.k*this.vy*v)*this.dt;
+
+            this.x = this.x + this.vx*this.dt;
+            this.y = this.y + this.vy*this.dt;
+        } else {
+            this.x = this.x0 + this.vx*this.state.time;
+            this.y = this.y0 + this.vy*this.state.time - g*this.state.time*this.state.time/2;
+        }
+
+        this.dots.push([this.x, this.y]);
         this.setState({time: this.state.time + this.dt})
 
-        if (y <= 0) {
+        if (this.y <= 0) {
             this.stop();
+        } else {
+            drawChart(this.dots);
         }
     }
 
     stop() {
         clearInterval(this.interval);
         this.setState({time: 0});
+        this.dots = [["X", "Y"]];
     }
 
     render() {
