@@ -98,7 +98,7 @@ class Timer extends React.Component {
     render() {
         return (
             <div className="row">
-                <h3>Time: {this.props.time + "s"}</h3>
+                <h3 className="ml-2">Time: {Math.round(this.props.time * 100) / 100 + "s"}</h3>
             </div>
         )
     }
